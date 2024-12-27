@@ -31,8 +31,7 @@ Example `package.json` dependencies:
 ## Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/gemini-flashcard-generator.git
-   cd gemini-flashcard-generator
+   git clone https://github.com/Pr0-T0/flashcards-app.git
    ```
 
 2. Install dependencies:
