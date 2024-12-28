@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Question-Answer Cards</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <style>
-         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap'); /* Example font import */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lily+Script+One&display=swap');
+        
         body {
-        background: #2C2F33;
-        font-family: 'Lily Script One';
-        display: flex; /* Make the body a flex container */
-        flex-direction: row; /* Arrange children horizontally */
-        align-items: center; /* Center items vertically */
-        justify-content: center; /* Center items horizontally */
-        height: 100vh;
-        margin: 0;
-        gap: 20px; /* Adds spacing between the children */
+            background: #2C2F33;
+            font-family: 'Lily Script One', cursive;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            gap: 20px;
         }
 
         .card-container {
@@ -51,7 +53,6 @@
             color: white;
             overflow-y: auto;
             word-wrap: break-word;
-            text-overflow: ellipsis;
             box-shadow: 1px 1px 5px black;
             font-family: 'Roboto', sans-serif;
         }
@@ -72,7 +73,7 @@
         .controls button {
             padding: 10px 20px;
             font-size: 16px;
-            margin: 0 5px;
+            margin: 0 10px;
             border: none;
             border-radius: 5px;
             background-color: #03446A;
@@ -88,26 +89,20 @@
             display: none;
         }
 
-        .box-view{
+        .box-view {
             display: inline-block;
             background-color: #424549;
-            padding-left: 30px;
-            padding-right: 35px;
-            padding-top: 30px;
-            padding-bottom: 30px;
+            padding: 30px;
             border-radius: 30px;
-            
-            border-width: 1px;
-            border-color: white;
-            border-style: solid;
+            border: 1px solid white;
         }
-        .others{
+
+        .others {
             display: block;
             color: white;
             padding: 20px;
             border-radius: 10px;
             font-size: 16px;
-
         }
         
         .info-button, .download-button {
@@ -118,18 +113,19 @@
             height: 50px;
             margin: 10px;
             border: none;
-            border-radius: 50%; /* Makes the button round */
+            border-radius: 50%;
             background-color: #007BFF;
             color: white;
             cursor: pointer;
             font-size: 20px;
+        }
 
         .info-button:hover, .download-button:hover {
-            background-color: #0056b3; /* Darker shade on hover */
+            background-color: #0056b3;
         }
 
         .info-button i, .download-button i {
-            pointer-events: none; /* Ensures the icons are not clickable separately */
+            pointer-events: none;
         }
     </style>
 </head>
@@ -137,35 +133,85 @@
     <div class="box-view">
         <div class="card-container"></div>
         <div class="controls">
-            <button id="prev" style="margin-right: 130px;margin-left: 10px;">
-                <i class="fas fa-arrow-left"></i> <!-- Left arrow icon -->
+            <button id="prev">
+                <i class="fas fa-arrow-left"></i>
             </button>
             <button id="next">
-                <i class="fas fa-arrow-right"></i> <!-- Right arrow icon -->
+                <i class="fas fa-arrow-right"></i>
             </button>
         </div>
     </div>
     <div class="others">
-        <button class="info-button">
+        <button class="info-button" id="info-button">
             <i class="fas fa-info-circle"></i>
         </button>
-        <button class="download-button">
+        <button class="download-button" id="download-button">
             <i class="fas fa-download"></i>
         </button>
     </div>
 
     <script>
-        // Retrieve the QA data from localStorage
         const qaData = JSON.parse(localStorage.getItem("qaData")) || [];
 
         if (qaData.length === 0) {
-            alert("No QA data available.");
+            qaData.push({ question: "No data available", answer: "Please add QA entries." });
         }
 
         const cardContainer = document.querySelector('.card-container');
         let currentCardIndex = 0;
 
-        // Generate cards dynamically from JSON
+        function generatePDF(data) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 10; // Left and right margins
+        const lineHeight = 7; // Line height between elements
+        let y = 20; // Initial vertical position
+
+        // Title
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("Question-Answer Cards", pageWidth / 2, y, { align: "center" });
+        y += 10; // Add space below the title
+
+        // Loop through questions and answers
+        data.forEach((item, index) => {
+            if (y > 270) { // Check for page overflow
+                doc.addPage();
+                y = 10; // Reset Y position for new page
+            }
+
+            // Question
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text(`Question ${index + 1}:`, margin, y);
+            y += lineHeight;
+
+            doc.setFont("helvetica", "normal");
+            doc.text(item.question, margin, y, { maxWidth: pageWidth - margin * 2 });
+            y += lineHeight * Math.ceil(doc.getTextDimensions(item.question).h / lineHeight);
+
+            // Answer
+            doc.setFont("helvetica", "bold");
+            doc.text("Answer:", margin, y);
+            y += lineHeight;
+
+            doc.setFont("helvetica", "normal");
+            doc.text(item.answer, margin, y, { maxWidth: pageWidth - margin * 2 });
+            y += lineHeight * Math.ceil(doc.getTextDimensions(item.answer).h / lineHeight);
+
+            // Add a separator line
+            y += 5; // Add some padding before the line
+            doc.setDrawColor(150); // Light gray color
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 10; // Space after the separator
+        });
+
+        // Save the PDF
+        doc.save("qa_cards.pdf");
+    }
+
+
         function generateCards(data) {
             data.forEach((item, index) => {
                 const cardElement = document.createElement('div');
@@ -186,16 +232,14 @@
             });
         }
 
-        // Show only the current card
         function showCard(index) {
             const cards = document.querySelectorAll('.card');
             cards.forEach((card, i) => {
                 card.classList.toggle('hidden', i !== index);
-                card.style.transform = 'rotateY(0deg)'; // Reset flip state
+                card.style.transform = 'rotateY(0deg)';
             });
         }
 
-        // Flip the current card
         function flipCard(index) {
             const cards = document.querySelectorAll('.card');
             const card = cards[index];
@@ -203,22 +247,24 @@
             card.style.transform = isFlipped ? 'rotateY(0deg)' : 'rotateY(180deg)';
         }
 
-        // Navigate to the previous card
+        document.getElementById('download-button').addEventListener('click', () => {
+            generatePDF(qaData);
+        });
+
         document.getElementById('prev').addEventListener('click', () => {
             currentCardIndex = (currentCardIndex - 1 + qaData.length) % qaData.length;
             showCard(currentCardIndex);
         });
 
-        // Navigate to the next card
         document.getElementById('next').addEventListener('click', () => {
             currentCardIndex = (currentCardIndex + 1) % qaData.length;
             showCard(currentCardIndex);
         });
 
-        // Flip the card on click
-        cardContainer.addEventListener('click', () => flipCard(currentCardIndex));
+        cardContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.card')) flipCard(currentCardIndex);
+        });
 
-        // Initialize the view
         generateCards(qaData);
         showCard(currentCardIndex);
     </script>
