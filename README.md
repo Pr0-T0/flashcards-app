@@ -13,6 +13,9 @@ This project leverages the **Gemini API** to create flashcards from PDF notes, s
 ### Dependencies
 Install the required Node.js libraries using:
 ```bash
+cd backend
+```
+```bash
 npm install
 ```
 Example `package.json` dependencies:
