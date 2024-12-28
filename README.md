@@ -39,6 +39,7 @@ Example `package.json` dependencies:
 
 2. Install dependencies:
    ```bash
+   cd backend
    npm install
    ```
 
