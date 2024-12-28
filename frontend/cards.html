@@ -13,33 +13,22 @@
             background: #2C2F33;
             font-family: 'Lily Script One', cursive;
             display: flex;
+            flex-direction: row;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
-        }
-
-        .box-view {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #424549;
-            padding: 30px;
-            padding-right: 45px;
-            border-radius: 30px;
-            border: 1px solid white;
-            position: relative;
+            gap: 20px;
         }
 
         .card-container {
             width: 250px;
             height: 350px;
             perspective: 1000px;
-            position: relative;
+            margin-bottom: 30px;
         }
 
         .card {
-            display: inline-block;
             width: 100%;
             height: 100%;
             position: absolute;
@@ -65,7 +54,7 @@
             overflow-y: auto;
             word-wrap: break-word;
             box-shadow: 1px 1px 5px black;
-            font-family: 'Roboto';
+            font-family: 'Roboto', sans-serif;
         }
 
         .front {
@@ -100,61 +89,44 @@
             display: none;
         }
 
+        .box-view {
+            display: inline-block;
+            background-color: #424549;
+            padding: 30px;
+            padding-right: 50px;
+            border-radius: 30px;
+            border: 1px solid white;
+        }
+
+        .others {
+            display: block;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        
         .info-button, .download-button {
-            position: absolute;
+            display: block;
+            justify-content: center;
+            align-items: center;
             width: 50px;
             height: 50px;
+            margin: 10px;
             border: none;
             border-radius: 50%;
             background-color: #007BFF;
             color: white;
-            font-size: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             cursor: pointer;
+            font-size: 20px;
         }
 
         .info-button:hover, .download-button:hover {
             background-color: #0056b3;
         }
 
-        .info-button {
-            top: 50%; 
-            right: -70px; 
-            transform: translateY(-50%);
-        }
-
-        .download-button {
-            top: 70%;
-            right: -70px; 
-        }
-
-        .speech-bubble {
-            position: absolute;
-            top: 50%; 
-            right: 60px;
-            transform: translateY(-50%);
-            max-width: 200px;
-            background-color: #f1f1f1;
-            color: #333;
-            font-size: 14px;
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            display: none;
-            z-index: 1;
-        }
-
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: -10px;
-            transform: translateY(-50%);
-            border-width: 10px;
-            border-style: solid;
-            border-color: transparent #f1f1f1 transparent transparent;
+        .info-button i, .download-button i {
+            pointer-events: none;
         }
     </style>
 </head>
@@ -169,16 +141,16 @@
                 <i class="fas fa-arrow-right"></i>
             </button>
         </div>
+    </div>
+    <div class="others">
         <button class="info-button" id="info-button">
             <i class="fas fa-info-circle"></i>
         </button>
         <button class="download-button" id="download-button">
             <i class="fas fa-download"></i>
         </button>
-        <div class="speech-bubble" id="speech-bubble">
-            Click the cards to flip them and see the answers. Use the arrows to navigate through questions.
-        </div>
     </div>
+
     <script>
         const qaData = JSON.parse(localStorage.getItem("qaData")) || [];
 
@@ -187,14 +159,59 @@
         }
 
         const cardContainer = document.querySelector('.card-container');
-        const infoButton = document.getElementById('info-button');
-        const speechBubble = document.getElementById('speech-bubble');
         let currentCardIndex = 0;
 
-        function toggleSpeechBubble() {
-            const isVisible = speechBubble.style.display === 'block';
-            speechBubble.style.display = isVisible ? 'none' : 'block';
+        function generatePDF(data) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.width;
+            const margin = 10; // Left and right margins
+            const lineHeight = 7; // Line height between elements
+            let y = 20; // Initial vertical position
+
+            // Title
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Question-Answer Cards", pageWidth / 2, y, { align: "center" });
+            y += 10; // Add space below the title
+
+            // Loop through questions and answers
+            data.forEach((item, index) => {
+                if (y > 270) { // Check for page overflow
+                    doc.addPage();
+                    y = 10; // Reset Y position for new page
+                }
+
+                // Question
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(12);
+                doc.text(`Question ${index + 1}:`, margin, y);
+                y += lineHeight;
+
+                doc.setFont("helvetica", "normal");
+                doc.text(item.question, margin, y, { maxWidth: pageWidth - margin * 2 });
+                y += lineHeight * Math.ceil(doc.getTextDimensions(item.question).h / lineHeight);
+
+                // Answer
+                doc.setFont("helvetica", "bold");
+                doc.text("Answer:", margin, y);
+                y += lineHeight;
+
+                doc.setFont("helvetica", "normal");
+                doc.text(item.answer, margin, y, { maxWidth: pageWidth - margin * 2 });
+                y += lineHeight * Math.ceil(doc.getTextDimensions(item.answer).h / lineHeight);
+
+                // Add a separator line
+                y += 5; // Add some padding before the line
+                doc.setDrawColor(150); // Light gray color
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 10; // Space after the separator
+            });
+
+            // Save the PDF
+            doc.save("qa_cards.pdf");
         }
+
 
         function generateCards(data) {
             data.forEach((item, index) => {
@@ -231,7 +248,9 @@
             card.style.transform = isFlipped ? 'rotateY(0deg)' : 'rotateY(180deg)';
         }
 
-        infoButton.addEventListener('click', toggleSpeechBubble);
+        document.getElementById('download-button').addEventListener('click', () => {
+            generatePDF(qaData);
+        });
 
         document.getElementById('prev').addEventListener('click', () => {
             currentCardIndex = (currentCardIndex - 1 + qaData.length) % qaData.length;
